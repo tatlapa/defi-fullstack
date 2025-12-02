@@ -5,6 +5,7 @@ import { useHotelStore } from "@/stores/hotelStore";
 import { Hotel } from "@/types";
 import { Dialog, Button } from "@chakra-ui/react";
 import HotelForm from "../HotelForm";
+import { toaster } from "@/components/ui/toaster";
 
 interface EditHotelDialogProps {
   hotel: Hotel;
@@ -23,9 +24,21 @@ export default function EditHotelDialog({
     try {
       await hotelStore.updateHotel(hotel.id, data);
       await hotelStore.fetchHotels({ per_page: "50" });
+      toaster.create({
+        title: "Hôtel modifié avec succès",
+        description: "Les modifications ont été enregistrées",
+        type: "success",
+        duration: 5000,
+      });
       onClose();
     } catch (error) {
       console.error("Error updating hotel:", error);
+      toaster.create({
+        title: "Erreur lors de la modification",
+        description: "Impossible de modifier l'hôtel. Veuillez réessayer.",
+        type: "error",
+        duration: 5000,
+      });
     } finally {
       setLoading(false);
     }

@@ -6,6 +6,7 @@ import {
   type ColorModeProviderProps,
 } from "./color-mode"
 import { system } from "@/theme"
+import { Toaster } from "./toaster"
 
 export function Provider(props: ColorModeProviderProps) {
   return (
@@ -14,6 +15,7 @@ export function Provider(props: ColorModeProviderProps) {
         <Box bg="bg.canvas" minH="100vh">
           {props.children}
         </Box>
+        <Toaster />
       </ColorModeProvider>
     </ChakraProvider>
   )

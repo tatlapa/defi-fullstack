@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { Hotel } from "@/types";
+import { useState, useRef } from "react";
+import { Hotel, HotelsPicture } from "@/types";
 import {
   Box,
   Field,
   Input,
   Stack,
+  VStack,
   Textarea,
   Heading,
   Grid,
@@ -15,7 +16,24 @@ import {
   IconButton,
   Text,
 } from "@chakra-ui/react";
-import { LuCircleX } from "react-icons/lu";
+import { LuCircleX, LuGripVertical } from "react-icons/lu";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface HotelFormProps {
   hotel?: Hotel;
@@ -23,8 +41,123 @@ interface HotelFormProps {
   onSubmit: (data: FormData) => Promise<void>;
 }
 
+interface ImageItem {
+  id: string;
+  preview: string;
+  isExisting: boolean;
+  file?: File;
+  existingPicture?: HotelsPicture;
+}
+
+interface SortableImageProps {
+  id: string;
+  preview: string;
+  index: number;
+  onRemove: (index: number) => void;
+}
+
+function SortableImage({ id, preview, index, onRemove }: SortableImageProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <Box
+      ref={setNodeRef}
+      style={style}
+      position="relative"
+      borderRadius="md"
+      overflow="hidden"
+      bg={{ base: "white", _dark: "gray.800" }}
+      borderWidth="2px"
+      borderColor={{ base: "gray.200", _dark: "gray.700" }}
+      _hover={{
+        borderColor: { base: "brand.600", _dark: "brand.500" },
+      }}
+    >
+      <Image
+        src={preview}
+        alt={`Preview ${index + 1}`}
+        objectFit="cover"
+        h="120px"
+        w="100%"
+      />
+
+      <IconButton
+        aria-label="Faire glisser pour réorganiser"
+        size="xs"
+        position="absolute"
+        top={1}
+        left={1}
+        bg="blackAlpha.700"
+        color="white"
+        cursor="grab"
+        _active={{ cursor: "grabbing" }}
+        {...listeners}
+        {...attributes}
+      >
+        <LuGripVertical />
+      </IconButton>
+
+      <IconButton
+        aria-label="Supprimer l'image"
+        size="xs"
+        colorScheme="red"
+        position="absolute"
+        top={1}
+        right={1}
+        onClick={() => onRemove(index)}
+      >
+        <LuCircleX />
+      </IconButton>
+
+      <Text
+        position="absolute"
+        bottom={1}
+        left={1}
+        bg="blackAlpha.700"
+        color="white"
+        px={1.5}
+        py={0.5}
+        borderRadius="md"
+        fontSize="xs"
+        fontWeight="bold"
+      >
+        {index + 1}
+      </Text>
+    </Box>
+  );
+}
+
 export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
-  const [previews, setPreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const initialImages: ImageItem[] = hotel?.pictures
+    ? [...hotel.pictures]
+        .sort((a, b) => a.position - b.position)
+        .map((pic) => ({
+          id: `existing-${pic.id}`,
+          preview: `${process.env.NEXT_PUBLIC_BACKEND_URL}/storage/${pic.filepath}`,
+          isExisting: true,
+          existingPicture: pic,
+        }))
+    : [];
+
+  const [images, setImages] = useState<ImageItem[]>(initialImages);
+  const [deletedPictureIds, setDeletedPictureIds] = useState<number[]>([]);
+
   const [formData, setFormData] = useState({
     name: hotel?.name || "",
     address1: hotel?.address1 || "",
@@ -37,8 +170,14 @@ export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
     description: hotel?.description || "",
     max_capacity: hotel?.max_capacity || 1,
     price_per_night: hotel?.price_per_night || 0,
-    pictures: [] as File[],
   });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -47,24 +186,74 @@ export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
     setFormData({ ...formData, [name]: value });
   };
 
+  const addFiles = (files: File[]) => {
+    const newImages: ImageItem[] = files.map((file, index) => ({
+      id: `new-${Date.now()}-${index}`,
+      preview: URL.createObjectURL(file),
+      isExisting: false,
+      file,
+    }));
+
+    setImages([...images, ...newImages]);
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      setFormData({ ...formData, pictures: files });
+      addFiles(files);
+    }
+  };
 
-      const newPreviews = files.map((file) => URL.createObjectURL(file));
-      setPreviews(newPreviews);
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const files = Array.from(e.dataTransfer.files).filter((file) =>
+      file.type.startsWith("image/")
+    );
+
+    if (files.length > 0) {
+      addFiles(files);
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = images.findIndex((img) => img.id === active.id);
+      const newIndex = images.findIndex((img) => img.id === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        setImages(arrayMove(images, oldIndex, newIndex));
+      }
     }
   };
 
   const removeImage = (index: number) => {
-    const newPictures = formData.pictures.filter((_, i) => i !== index);
-    const newPreviews = previews.filter((_, i) => i !== index);
+    const imageToRemove = images[index];
 
-    URL.revokeObjectURL(previews[index]);
+    if (imageToRemove.isExisting && imageToRemove.existingPicture) {
+      setDeletedPictureIds([...deletedPictureIds, imageToRemove.existingPicture.id]);
+    } else if (!imageToRemove.isExisting) {
+      URL.revokeObjectURL(imageToRemove.preview);
+    }
 
-    setFormData({ ...formData, pictures: newPictures });
-    setPreviews(newPreviews);
+    setImages(images.filter((_, i) => i !== index));
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -72,11 +261,20 @@ export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
 
     const data = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
-      if (key === "pictures") {
-        (value as File[]).forEach((file) => data.append("pictures[]", file));
-      } else {
-        data.append(key, value as string);
+      data.append(key, value as string);
+    });
+
+    images.forEach((image, index) => {
+      if (image.isExisting && image.existingPicture) {
+        data.append(`existing_pictures[${index}][id]`, image.existingPicture.id.toString());
+        data.append(`existing_pictures[${index}][position]`, index.toString());
+      } else if (!image.isExisting && image.file) {
+        data.append("pictures[]", image.file);
       }
+    });
+
+    deletedPictureIds.forEach((id) => {
+      data.append("deleted_pictures[]", id.toString());
     });
 
     await onSubmit(data);
@@ -267,74 +465,86 @@ export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
 
         <Box>
           <Heading size="sm" mb={4} color="gray.700">
-            {hotel ? "Nouvelles images" : "Images"}
+            Images
           </Heading>
-          <Field.Root>
-            <Field.Label>
-              {hotel ? "Remplacer les images (optionnel)" : "Ajouter des images (min. 1, max 5MB chacune)"}
-            </Field.Label>
-            <Input
-              type="file"
-              name="pictures"
-              multiple
-              accept="image/jpeg,image/png,image/webp"
-              onChange={handleFileChange}
-              pt={1}
-            />
-            <Field.HelperText>
-              {hotel ? "Laissez vide pour conserver les images actuelles" : "Formats acceptés : JPEG, PNG, WEBP"}
-            </Field.HelperText>
-          </Field.Root>
 
-          {previews.length > 0 && (
-            <Grid
-              templateColumns="repeat(auto-fill, minmax(120px, 1fr))"
-              gap={3}
-              mt={3}
-            >
-              {previews.map((preview, index) => (
-                <Box
-                  key={index}
-                  position="relative"
-                  borderRadius="md"
-                  overflow="hidden"
+          {images.length > 0 && (
+            <Box mb={4}>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={images.map((img) => img.id)}
+                  strategy={rectSortingStrategy}
                 >
-                  <Image
-                    src={preview}
-                    alt={`Preview ${index + 1}`}
-                    objectFit="cover"
-                    h="120px"
-                    w="100%"
-                  />
-                  <IconButton
-                    aria-label="Supprimer l'image"
-                    size="xs"
-                    colorScheme="red"
-                    position="absolute"
-                    top={1}
-                    right={1}
-                    onClick={() => removeImage(index)}
+                  <Grid
+                    templateColumns="repeat(auto-fill, minmax(120px, 1fr))"
+                    gap={3}
                   >
-                    <LuCircleX />
-                  </IconButton>
-
-                  <Text
-                    position="absolute"
-                    bottom={1}
-                    left={1}
-                    bg="blackAlpha.700"
-                    color="white"
-                    px={1.5}
-                    py={0.5}
-                    borderRadius="md"
-                    fontSize="xs"
-                  >
-                    {index + 1}
-                  </Text>
-                </Box>
-              ))}
-            </Grid>
+                    {images.map((image, index) => (
+                      <SortableImage
+                        key={image.id}
+                        id={image.id}
+                        preview={image.preview}
+                        index={index}
+                        onRemove={removeImage}
+                      />
+                    ))}
+                  </Grid>
+                </SortableContext>
+              </DndContext>
+            </Box>
           )}
+
+          <Box>
+            <Text fontSize="sm" fontWeight="medium" mb={2} color={{ base: "gray.700", _dark: "gray.300" }}>
+              {hotel ? "Ajouter de nouvelles images" : "Ajouter des images"}
+            </Text>
+
+            <Box
+              borderWidth="2px"
+              borderStyle="dashed"
+              borderColor={isDragging ? "brand.600" : { base: "gray.300", _dark: "gray.600" }}
+              borderRadius="lg"
+              p={8}
+              textAlign="center"
+              bg={isDragging ? { base: "brand.50", _dark: "brand.900/20" } : { base: "gray.50", _dark: "gray.800" }}
+              transition="all 0.2s"
+              cursor="pointer"
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              _hover={{
+                borderColor: "brand.600",
+                bg: { base: "brand.50", _dark: "brand.900/20" },
+              }}
+            >
+              <Input
+                ref={fileInputRef}
+                type="file"
+                name="pictures"
+                multiple
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleFileChange}
+                display="none"
+              />
+
+              <VStack gap={2}>
+                <Text fontSize="lg" fontWeight="medium" color={{ base: "gray.700", _dark: "gray.300" }}>
+                  {isDragging ? "Déposez vos images ici" : "Glissez-déposez vos images"}
+                </Text>
+                <Text fontSize="sm" color={{ base: "gray.500", _dark: "gray.400" }}>
+                  ou cliquez pour sélectionner
+                </Text>
+                <Text fontSize="xs" color={{ base: "gray.400", _dark: "gray.500" }}>
+                  JPEG, PNG, WEBP (max 5MB par image)
+                </Text>
+              </VStack>
+            </Box>
+          </Box>
         </Box>
       </Stack>
     </form>

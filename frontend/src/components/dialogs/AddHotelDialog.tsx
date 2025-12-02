@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useHotelStore } from "@/stores/hotelStore";
 import { Dialog, Button } from "@chakra-ui/react";
 import HotelForm from "../HotelForm";
+import { toaster } from "@/components/ui/toaster";
 
 interface AddHotelDialogProps {
   onClose: () => void;
@@ -18,9 +19,21 @@ export default function AddHotelDialog({ onClose }: AddHotelDialogProps) {
     try {
       await hotelStore.createHotel(data);
       await hotelStore.fetchHotels({ per_page: "50" });
+      toaster.create({
+        title: "Hôtel créé avec succès",
+        description: "L'hôtel a été ajouté à la liste",
+        type: "success",
+        duration: 5000,
+      });
       onClose();
     } catch (error) {
       console.error("Error creating hotel:", error);
+      toaster.create({
+        title: "Erreur lors de la création",
+        description: "Impossible de créer l'hôtel. Veuillez réessayer.",
+        type: "error",
+        duration: 5000,
+      });
     } finally {
       setLoading(false);
     }
