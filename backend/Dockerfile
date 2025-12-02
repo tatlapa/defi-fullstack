@@ -11,13 +11,15 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     libzip-dev \
     libonig-dev \
+    libicu-dev \
     curl \
     default-mysql-client \
     netcat-openbsd \
  && rm -rf /var/lib/apt/lists/*
 
-# Installer les extensions PHP
-RUN docker-php-ext-install pdo pdo_mysql mbstring zip gd
+# Configurer et installer les extensions PHP
+RUN docker-php-ext-configure intl \
+    && docker-php-ext-install pdo pdo_mysql mbstring zip gd intl
 
 # Installer Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
