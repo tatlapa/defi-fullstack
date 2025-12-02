@@ -7,10 +7,10 @@ until nc -z database 3306; do
   sleep 2
 done
 
-# Lancer les migrations et les seeders
+# Lancer les migrations, seeders et storage link
 php artisan migrate --force
 php artisan db:seed --force
-
+php artisan storage:link --force
 
 # Démarrer le serveur Laravel
 php artisan serve --host=0.0.0.0 --port=8000

@@ -14,7 +14,7 @@ class HotelController extends Controller
      */
     public function getHotels(Request $request)
     {
-        $perPage = $request->input('per_page', 10);
+        $perPage = $request->input('per_page', 12);
 
         // Charge les hôtels avec leurs images et applique les filtres de recherche
         $hotels = Hotel::with('pictures')
@@ -63,7 +63,6 @@ class HotelController extends Controller
             'description' => 'required|string|max:5000',
             'max_capacity' => 'required|integer|min:1|max:200',
             'price_per_night' => 'required|numeric|min:0',
-            'phone' => 'required|string',
             'pictures' => 'required|array|min:1',
             'pictures.*' => 'image|mimes:jpeg,png,webp|max:5120'
         ]);
@@ -117,6 +116,83 @@ class HotelController extends Controller
             
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to delete hotel'], 500);
+        }
+    }
+
+    public function updateHotel(Request $request, $id)
+    {
+        $hotel = Hotel::with('pictures')->find($id);
+
+        if (!$hotel) {
+            return response()->json(['error' => 'Hotel not found'], 404);
+        }
+
+        // Validation des champs de l'hôtel
+        $validatedData = $request->validate([
+            'name'  => 'sometimes|string|max:255',
+            'address1'  => 'sometimes|string',
+            'address2'  => 'sometimes|nullable|string',
+            'zipcode'   => 'sometimes|string',
+            'city'  => 'sometimes|string',
+            'country'   => 'sometimes|string',
+            'lat'   => 'sometimes|numeric|between:-90,90',
+            'lng'   => 'sometimes|numeric|between:-180,180',
+            'description'   => 'sometimes|string|max:5000',
+            'max_capacity'  => 'sometimes|integer|min:1|max:200',
+            'price_per_night'   => 'sometimes|numeric|min:0',
+        ]);
+
+        // Validation des images
+        $validatedImages = $request->validate([
+            'new_pictures'         => 'sometimes|array',
+            'new_pictures.*'       => 'image|mimes:jpeg,png,webp|max:5120',
+            'delete_pictures'      => 'sometimes|array',
+            'delete_pictures.*'    => 'integer'
+        ]);
+
+        try {
+
+            // Mise à jour de l'hôtel (OK maintenant)
+            $hotel->update($validatedData);
+
+            // Suppression d'images
+            if ($request->has('delete_pictures')) {
+                foreach ($request->delete_pictures as $picId) {
+
+                    $picture = $hotel->pictures()->find($picId);
+
+                    if ($picture) {
+                        Storage::disk('public')->delete($picture->filepath);
+                        $picture->delete();
+                    }
+                }
+            }
+
+            // Ajout de nouvelles images
+            if ($request->hasFile('new_pictures')) {
+
+                $currentPosition = $hotel->pictures()->max('position') ?? 0;
+
+                foreach ($request->file('new_pictures') as $index => $file) {
+
+                    $path = $file->store('hotels', 'public');
+
+                    HotelsPicture::create([
+                        'hotel_id' => $hotel->id,
+                        'filepath' => $path,
+                        'filesize' => $file->getSize(),
+                        'position' => $currentPosition + $index + 1
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'message' => 'Hotel updated successfully',
+                'hotel'   => $hotel->load('pictures')
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to update hotel'], 500);
         }
     }
 }

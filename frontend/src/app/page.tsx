@@ -1,10 +1,12 @@
-import { Button, HStack } from "@chakra-ui/react";
+"use client";
 
-export default function Home() {
-  return (
-    <HStack>
-      <Button>Click me</Button>
-      <Button>Click me</Button>
-    </HStack>
-  );
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+export default function HomePage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace("/hotels"); // redirige automatiquement vers la liste des hôtels
+  }, [router]);
 }
