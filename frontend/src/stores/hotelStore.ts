@@ -1,13 +1,21 @@
 import { create } from 'zustand';
 import { Hotel } from '../types';
 
+interface PaginationMeta {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+}
+
 interface HotelStore {
   hotels: Hotel[];
   currentHotel?: Hotel;
   loading: boolean;
   error?: string;
+  pagination?: PaginationMeta;
 
-  fetchHotels: (params?: any) => Promise<void>;
+  fetchHotels: (params?: { page?: number; per_page?: number }) => Promise<void>;
   fetchHotel: (id: string) => Promise<void>;
   createHotel: (formData: FormData) => Promise<void>;
   updateHotel: (id: number, formData: FormData) => Promise<void>;
@@ -20,13 +28,22 @@ export const useHotelStore = create<HotelStore>((set) => ({
   currentHotel: undefined,
   loading: false,
   error: undefined,
+  pagination: undefined,
 
   fetchHotels: async (params) => {
     set({ loading: true, error: undefined });
     try {
-      const res = await fetch(`/api/hotels`);
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+
+      const url = `/api/hotels${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const res = await fetch(url);
       const data = await res.json();
-      set({ hotels: data.data || [] });
+      set({
+        hotels: data.data || [],
+        pagination: data.meta
+      });
     } catch (err: any) {
       set({ error: err.message || 'Failed to fetch hotels' });
     } finally {

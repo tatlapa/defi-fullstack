@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useHotelStore } from "@/stores/hotelStore";
 import { Hotel } from "@/types";
-import { Dialog, Button, VStack, Text, Box } from "@chakra-ui/react";
+import { Dialog, Button, VStack, Text, Box, CloseButton } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 
 interface DeleteHotelDialogProps {
@@ -22,7 +22,7 @@ export default function DeleteHotelDialog({
     setLoading(true);
     try {
       await hotelStore.deleteHotel(hotel.id);
-      await hotelStore.fetchHotels({ per_page: "50" });
+      await hotelStore.fetchHotels({ page: hotelStore.pagination?.current_page || 1, per_page: 12 });
       toaster.create({
         title: "Hôtel supprimé avec succès",
         description: "L'hôtel a été retiré de la liste",
@@ -48,6 +48,9 @@ export default function DeleteHotelDialog({
       <Dialog.Backdrop />
       <Dialog.Positioner>
         <Dialog.Content>
+        <Dialog.CloseTrigger>
+            <CloseButton size="sm" />
+          </Dialog.CloseTrigger>
           <Dialog.Header>
             <Dialog.Title>Confirmer la suppression</Dialog.Title>
           </Dialog.Header>

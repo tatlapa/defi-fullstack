@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useHotelStore } from "@/stores/hotelStore";
 import { Hotel } from "@/types";
-import { Dialog, Button } from "@chakra-ui/react";
+import { Dialog, Button, CloseButton } from "@chakra-ui/react";
 import HotelForm from "../HotelForm";
 import { toaster } from "@/components/ui/toaster";
 
@@ -23,7 +23,10 @@ export default function EditHotelDialog({
     setLoading(true);
     try {
       await hotelStore.updateHotel(hotel.id, data);
-      await hotelStore.fetchHotels({ per_page: "50" });
+      await hotelStore.fetchHotels({
+        page: hotelStore.pagination?.current_page || 1,
+        per_page: 12,
+      });
       toaster.create({
         title: "Hôtel modifié avec succès",
         description: "Les modifications ont été enregistrées",
@@ -49,6 +52,9 @@ export default function EditHotelDialog({
       <Dialog.Backdrop />
       <Dialog.Positioner>
         <Dialog.Content maxH="90vh" overflowY="auto">
+          <Dialog.CloseTrigger>
+            <CloseButton size="sm" />
+          </Dialog.CloseTrigger>
           <Dialog.Header>
             <Dialog.Title>Modifier l&apos;hôtel</Dialog.Title>
           </Dialog.Header>

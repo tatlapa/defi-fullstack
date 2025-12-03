@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useHotelStore } from "@/stores/hotelStore";
 import { Hotel } from "@/types";
-import { Box, Button, Heading, HStack, Grid, Dialog, Tabs, Table, IconButton, Skeleton } from "@chakra-ui/react";
-import { LuPlus, LuGrid3X3, LuTable2, LuPencil, LuTrash2 } from "react-icons/lu";
+import { Box, Button, Heading, HStack, Grid, Dialog, Tabs, Table, IconButton, Skeleton, Text, Pagination, ButtonGroup } from "@chakra-ui/react";
+import { LuPlus, LuGrid3X3, LuTable2, LuPencil, LuTrash2, LuChevronLeft, LuChevronRight } from "react-icons/lu";
 import HotelCard from "@/components/HotelCard";
 import HotelCardSkeleton from "@/components/HotelCardSkeleton";
 import AddHotelDialog from "@/components/dialogs/AddHotelDialog";
@@ -12,16 +12,17 @@ import EditHotelDialog from "@/components/dialogs/EditHotelDialog";
 import DeleteHotelDialog from "@/components/dialogs/DeleteHotelDialog";
 
 export default function HotelManagement() {
-  const { hotels, fetchHotels, loading } = useHotelStore();
+  const { hotels, fetchHotels, loading, pagination } = useHotelStore();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
-  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [currentPage, setCurrentPage] = useState(1);
+  const perPage = 12;
 
   useEffect(() => {
-    fetchHotels({ per_page: "50" });
-  }, [fetchHotels]);
+    fetchHotels({ page: currentPage, per_page: perPage });
+  }, [currentPage, fetchHotels]);
 
   const handleEditClick = (hotel: Hotel) => {
     setSelectedHotel(hotel);
@@ -44,69 +45,43 @@ export default function HotelManagement() {
             Créez, modifiez et gérez vos établissements
           </Heading>
         </Box>
-        <HStack gap={3}>
-          <HStack
-            bg={{ base: "white", _dark: "gray.800" }}
-            borderRadius="lg"
-            p={1}
-            shadow="sm"
-            borderWidth="1px"
-            borderColor={{ base: "gray.200", _dark: "gray.700" }}
-          >
-            <IconButton
-              aria-label="Vue grille"
-              size="sm"
-              variant={viewMode === "grid" ? "solid" : "ghost"}
-              bg={viewMode === "grid" ? "brand.600" : "transparent"}
-              color={viewMode === "grid" ? "white" : { base: "gray.600", _dark: "gray.400" }}
-              _hover={{
-                bg: viewMode === "grid" ? "brand.700" : { base: "gray.100", _dark: "gray.700" },
-              }}
-              onClick={() => setViewMode("grid")}
+        <Dialog.Root
+          open={addDialogOpen}
+          onOpenChange={(e) => setAddDialogOpen(e.open)}
+          size="xl"
+        >
+          <Dialog.Trigger asChild>
+            <Button
+              bg="brand.600"
+              color="white"
+              size="lg"
+              gap={2}
+              shadow="lg"
+              _hover={{ bg: "brand.700", transform: "translateY(-2px)", shadow: "xl" }}
+              transition="all 0.2s"
             >
-              <LuGrid3X3 size={18} />
-            </IconButton>
-            <IconButton
-              aria-label="Vue tableau"
-              size="sm"
-              variant={viewMode === "table" ? "solid" : "ghost"}
-              bg={viewMode === "table" ? "brand.600" : "transparent"}
-              color={viewMode === "table" ? "white" : { base: "gray.600", _dark: "gray.400" }}
-              _hover={{
-                bg: viewMode === "table" ? "brand.700" : { base: "gray.100", _dark: "gray.700" },
-              }}
-              onClick={() => setViewMode("table")}
-            >
-              <LuTable2 size={18} />
-            </IconButton>
-          </HStack>
-
-          <Dialog.Root
-            open={addDialogOpen}
-            onOpenChange={(e) => setAddDialogOpen(e.open)}
-            size="xl"
-          >
-            <Dialog.Trigger asChild>
-              <Button
-                bg="brand.600"
-                color="white"
-                size="lg"
-                gap={2}
-                shadow="lg"
-                _hover={{ bg: "brand.700", transform: "translateY(-2px)", shadow: "xl" }}
-                transition="all 0.2s"
-              >
-                <LuPlus size={20} />
-                Ajouter un hôtel
-              </Button>
-            </Dialog.Trigger>
-            <AddHotelDialog onClose={() => setAddDialogOpen(false)} />
-          </Dialog.Root>
-        </HStack>
+              <LuPlus size={20} />
+              Ajouter un hôtel
+            </Button>
+          </Dialog.Trigger>
+          <AddHotelDialog onClose={() => setAddDialogOpen(false)} />
+        </Dialog.Root>
       </HStack>
 
-      {viewMode === "grid" ? (
-        <Grid templateColumns="repeat(auto-fit, minmax(300px, 1fr))" gap={6}>
+      <Tabs.Root defaultValue="grid">
+        <Tabs.List mb={6}>
+          <Tabs.Trigger value="grid" gap={2}>
+            <LuGrid3X3 size={18} />
+            Vue grille
+          </Tabs.Trigger>
+          <Tabs.Trigger value="table" gap={2}>
+            <LuTable2 size={18} />
+            Vue tableau
+          </Tabs.Trigger>
+        </Tabs.List>
+
+        <Tabs.Content value="grid">
+          <Grid templateColumns="repeat(auto-fit, minmax(300px, 1fr))" gap={6}>
           {loading
             ? Array.from({ length: 8 }).map((_, index) => (
                 <HotelCardSkeleton key={index} />
@@ -120,9 +95,11 @@ export default function HotelManagement() {
                   onDelete={handleDeleteClick}
                 />
               ))}
-        </Grid>
-      ) : (
-        <Box
+          </Grid>
+        </Tabs.Content>
+
+        <Tabs.Content value="table">
+          <Box
           bg={{ base: "white", _dark: "gray.800" }}
           borderRadius="xl"
           shadow="lg"
@@ -209,6 +186,71 @@ export default function HotelManagement() {
               )}
             </Table.Body>
           </Table.Root>
+          </Box>
+        </Tabs.Content>
+      </Tabs.Root>
+
+      {pagination && pagination.last_page > 1 && (
+        <Box
+          display="flex"
+          flexDirection={{ base: "column", md: "row" }}
+          alignItems="center"
+          justifyContent="space-between"
+          gap={4}
+          mt={8}
+          p={4}
+          bg={{ base: "white", _dark: "gray.800" }}
+          borderRadius="lg"
+          borderWidth="1px"
+          borderColor={{ base: "gray.200", _dark: "gray.700" }}
+        >
+          <Text fontSize="sm" color={{ base: "gray.600", _dark: "gray.400" }}>
+            Affichage de{" "}
+            <Text as="span" fontWeight="medium">
+              {(pagination.current_page - 1) * pagination.per_page + 1}
+            </Text>{" "}
+            à{" "}
+            <Text as="span" fontWeight="medium">
+              {Math.min(pagination.current_page * pagination.per_page, pagination.total)}
+            </Text>{" "}
+            sur{" "}
+            <Text as="span" fontWeight="medium">
+              {pagination.total}
+            </Text>{" "}
+            résultats
+          </Text>
+
+          <Pagination.Root
+            count={pagination.total}
+            pageSize={perPage}
+            page={currentPage}
+            onPageChange={(details) => {
+              setCurrentPage(details.page);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          >
+            <ButtonGroup variant="ghost" size="sm">
+              <Pagination.PrevTrigger asChild>
+                <IconButton>
+                  <LuChevronLeft />
+                </IconButton>
+              </Pagination.PrevTrigger>
+
+              <Pagination.Items
+                render={(page) => (
+                  <IconButton variant={{ base: "ghost", _selected: "outline" }}>
+                    {page.value}
+                  </IconButton>
+                )}
+              />
+
+              <Pagination.NextTrigger asChild>
+                <IconButton>
+                  <LuChevronRight />
+                </IconButton>
+              </Pagination.NextTrigger>
+            </ButtonGroup>
+          </Pagination.Root>
         </Box>
       )}
 

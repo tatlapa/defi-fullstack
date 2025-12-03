@@ -1,21 +1,33 @@
-"use client"
+"use client";
 
 import { Box, Container, HStack, Button, IconButton } from "@chakra-ui/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LuHouse, LuList, LuPlus, LuMoon, LuSun } from "react-icons/lu";
 import { useColorMode } from "./ui/color-mode";
+import { useEffect, useState } from "react";
 
 export default function Header() {
   const pathname = usePathname();
   const { colorMode, toggleColorMode } = useColorMode();
+  const [mounted, setMounted] = useState(false);
 
   const isActive = (path: string) => {
     if (path === "/hotels") {
-      return pathname === "/hotels" || pathname?.startsWith("/hotels/") && pathname !== "/hotels/edit";
+      return (
+        pathname === "/hotels" ||
+        (pathname?.startsWith("/hotels/") && pathname !== "/hotels/edit")
+      );
     }
     return pathname === path;
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
 
   return (
     <Box
@@ -39,7 +51,7 @@ export default function Header() {
           py={3}
         >
           <HStack justify="space-between">
-            <Link href="/hotels" style={{ textDecoration: 'none' }}>
+            <Link href="/hotels" style={{ textDecoration: "none" }}>
               <Button
                 variant="ghost"
                 size="sm"
@@ -67,16 +79,22 @@ export default function Header() {
               borderWidth="1px"
               borderColor={{ base: "gray.200", _dark: "gray.600" }}
             >
-              <Link href="/hotels" style={{ textDecoration: 'none' }}>
+              <Link href="/hotels" style={{ textDecoration: "none" }}>
                 <Button
                   variant={isActive("/hotels") ? "solid" : "ghost"}
                   size="sm"
                   bg={isActive("/hotels") ? "brand.600" : "transparent"}
-                  color={isActive("/hotels") ? "white" : { base: "gray.700", _dark: "gray.200" }}
+                  color={
+                    isActive("/hotels")
+                      ? "white"
+                      : { base: "gray.700", _dark: "gray.200" }
+                  }
                   borderRadius="full"
                   gap={2}
                   _hover={{
-                    bg: isActive("/hotels") ? "brand.700" : { base: "gray.100", _dark: "gray.600" },
+                    bg: isActive("/hotels")
+                      ? "brand.700"
+                      : { base: "gray.100", _dark: "gray.600" },
                   }}
                   transition="all 0.2s"
                 >
@@ -85,16 +103,22 @@ export default function Header() {
                 </Button>
               </Link>
 
-              <Link href="/hotels/edit" style={{ textDecoration: 'none' }}>
+              <Link href="/hotels/edit" style={{ textDecoration: "none" }}>
                 <Button
                   variant={isActive("/hotels/edit") ? "solid" : "ghost"}
                   size="sm"
                   bg={isActive("/hotels/edit") ? "brand.600" : "transparent"}
-                  color={isActive("/hotels/edit") ? "white" : { base: "gray.700", _dark: "gray.200" }}
+                  color={
+                    isActive("/hotels/edit")
+                      ? "white"
+                      : { base: "gray.700", _dark: "gray.200" }
+                  }
                   borderRadius="full"
                   gap={2}
                   _hover={{
-                    bg: isActive("/hotels/edit") ? "brand.700" : { base: "gray.100", _dark: "gray.600" },
+                    bg: isActive("/hotels/edit")
+                      ? "brand.700"
+                      : { base: "gray.100", _dark: "gray.600" },
                   }}
                   transition="all 0.2s"
                 >
@@ -113,7 +137,11 @@ export default function Header() {
               color={{ base: "gray.600", _dark: "gray.300" }}
               _hover={{ bg: { base: "gray.100", _dark: "gray.700" } }}
             >
-              {colorMode === "light" ? <LuMoon size={18} /> : <LuSun size={18} />}
+              {colorMode === "light" ? (
+                <LuMoon size={18} />
+              ) : (
+                <LuSun size={18} />
+              )}
             </IconButton>
           </HStack>
         </Box>

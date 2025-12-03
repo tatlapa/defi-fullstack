@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useHotelStore } from "@/stores/hotelStore";
-import { Dialog, Button } from "@chakra-ui/react";
+import { Dialog, Button, CloseButton } from "@chakra-ui/react";
 import HotelForm from "../HotelForm";
 import { toaster } from "@/components/ui/toaster";
 
@@ -18,7 +18,7 @@ export default function AddHotelDialog({ onClose }: AddHotelDialogProps) {
     setLoading(true);
     try {
       await hotelStore.createHotel(data);
-      await hotelStore.fetchHotels({ per_page: "50" });
+      await hotelStore.fetchHotels({ page: 1, per_page: 12 });
       toaster.create({
         title: "Hôtel créé avec succès",
         description: "L'hôtel a été ajouté à la liste",
@@ -44,10 +44,12 @@ export default function AddHotelDialog({ onClose }: AddHotelDialogProps) {
       <Dialog.Backdrop />
       <Dialog.Positioner>
         <Dialog.Content maxH="90vh" overflowY="auto">
+          <Dialog.CloseTrigger>
+            <CloseButton size="sm" />
+          </Dialog.CloseTrigger>
           <Dialog.Header>
             <Dialog.Title>Ajouter un hôtel</Dialog.Title>
           </Dialog.Header>
-          <Dialog.CloseTrigger />
 
           <Dialog.Body>
             <HotelForm formId="add-hotel-form" onSubmit={handleSubmit} />

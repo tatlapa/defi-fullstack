@@ -248,11 +248,11 @@ export default function HotelPage() {
           <Card.Body>
             <Card.Title>Informations</Card.Title>
             <Card.Description>
-              <Text fontSize="sm" color="gray.600" mb={1}>
-                Coordonnées GPS
-              </Text>
-              <Text fontSize="sm">Lat: {currentHotel.lat}</Text>
-              <Text fontSize="sm">Lng: {currentHotel.lng}</Text>
+              Coordonnées GPS
+              <br />
+              Lat: {currentHotel.lat}
+              <br />
+              Lng: {currentHotel.lng}
             </Card.Description>
           </Card.Body>
         </Card.Root>
@@ -274,7 +274,7 @@ function LightboxGallery({
       <Dialog.Positioner>
         <Dialog.Content bg="transparent" shadow="none">
           <Dialog.CloseTrigger asChild>
-            <CloseButton size="lg" color="white" />
+            <CloseButton size="sm" color="white" />
           </Dialog.CloseTrigger>
 
           <Dialog.Body
