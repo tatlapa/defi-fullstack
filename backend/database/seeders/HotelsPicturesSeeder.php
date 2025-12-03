@@ -16,7 +16,7 @@ class HotelsPicturesSeeder extends Seeder
             // Hotel 1
             [
                 'hotel_id' => 1,
-                'filepath' => 'hotels/600x400.webp',
+                'filepath' => 'hotels/1280x720.webp',
                 'filesize' => 2048,
                 'position' => 1,
                 'created_at' => now (),
@@ -24,7 +24,7 @@ class HotelsPicturesSeeder extends Seeder
             ],
             [
                 'hotel_id' => 1,
-                'filepath' => 'hotels/600x400.webp',
+                'filepath' => 'hotels/1280x720.webp',
                 'filesize' => 2048,
                 'position' => 2,
                 'created_at' => now (),
@@ -33,7 +33,7 @@ class HotelsPicturesSeeder extends Seeder
             // Hotel 2
             [
                 'hotel_id' => 2,
-                'filepath' => 'hotels/600x400.webp',
+                'filepath' => 'hotels/1280x720.webp',
                 'filesize' => 2048,
                 'position' => 1,
                 'created_at' => now (),
@@ -41,7 +41,7 @@ class HotelsPicturesSeeder extends Seeder
             ],
             [
                 'hotel_id' => 2,
-                'filepath' => 'hotels/600x400.webp',
+                'filepath' => 'hotels/1280x720.webp',
                 'filesize' => 2048,
                 'position' => 2,
                 'created_at' => now (),
@@ -50,7 +50,7 @@ class HotelsPicturesSeeder extends Seeder
             // Hotel 3
             [
                 'hotel_id' => 3,
-                'filepath' => 'hotels/600x400.webp',
+                'filepath' => 'hotels/1280x720.webp',
                 'filesize' => 2048,
                 'position' => 1,
                 'created_at' => now (),
@@ -58,7 +58,7 @@ class HotelsPicturesSeeder extends Seeder
             ],
             [
                 'hotel_id' => 3,
-                'filepath' => 'hotels/600x400.webp',
+                'filepath' => 'hotels/1280x720.webp',
                 'filesize' => 2048,
                 'position' => 2,
                 'created_at' => now (),
@@ -67,7 +67,7 @@ class HotelsPicturesSeeder extends Seeder
             // Hotel 4
             [
                 'hotel_id' => 4,
-                'filepath' => 'hotels/600x400.webp',
+                'filepath' => 'hotels/1280x720.webp',
                 'filesize' => 2048,
                 'position' => 1,
                 'created_at' => now (),
@@ -75,7 +75,7 @@ class HotelsPicturesSeeder extends Seeder
             ],
             [
                 'hotel_id' => 4,
-                'filepath' => 'hotels/600x400.webp',
+                'filepath' => 'hotels/1280x720.webp',
                 'filesize' => 2048,
                 'position' => 2,
                 'created_at' => now (),
@@ -84,7 +84,7 @@ class HotelsPicturesSeeder extends Seeder
             // Hotel 5
             [
                 'hotel_id' => 5,
-                'filepath' => 'hotels/600x400.webp',
+                'filepath' => 'hotels/1280x720.webp',
                 'filesize' => 2048,
                 'position' => 1,
                 'created_at' => now (),
@@ -92,7 +92,7 @@ class HotelsPicturesSeeder extends Seeder
             ],
             [
                 'hotel_id' => 5,
-                'filepath' => 'hotels/600x400.webp',
+                'filepath' => 'hotels/1280x720.webp',
                 'filesize' => 2048,
                 'position' => 2,
                 'created_at' => now (),
@@ -101,7 +101,7 @@ class HotelsPicturesSeeder extends Seeder
             // Hotel 6
             [
                 'hotel_id' => 6,
-                'filepath' => 'hotels/600x400.webp',
+                'filepath' => 'hotels/1280x720.webp',
                 'filesize' => 2048,
                 'position' => 1,
                 'created_at' => now (),
@@ -109,7 +109,7 @@ class HotelsPicturesSeeder extends Seeder
             ],
             [
                 'hotel_id' => 6,
-                'filepath' => 'hotels/600x400.webp',
+                'filepath' => 'hotels/1280x720.webp',
                 'filesize' => 2048,
                 'position' => 2,
                 'created_at' => now (),
@@ -118,7 +118,7 @@ class HotelsPicturesSeeder extends Seeder
             // Hotel 7
             [
                 'hotel_id' => 7,
-                'filepath' => 'hotels/600x400.webp',
+                'filepath' => 'hotels/1280x720.webp',
                 'filesize' => 2048,
                 'position' => 1,
                 'created_at' => now (),
@@ -126,7 +126,7 @@ class HotelsPicturesSeeder extends Seeder
             ],
             [
                 'hotel_id' => 7,
-                'filepath' => 'hotels/600x400.webp',
+                'filepath' => 'hotels/1280x720.webp',
                 'filesize' => 2048,
                 'position' => 2,
                 'created_at' => now (),
@@ -135,7 +135,7 @@ class HotelsPicturesSeeder extends Seeder
             // Hotel 8
             [
                 'hotel_id' => 8,
-                'filepath' => 'hotels/600x400.webp',
+                'filepath' => 'hotels/1280x720.webp',
                 'filesize' => 2048,
                 'position' => 1,
                 'created_at' => now (),
@@ -143,7 +143,7 @@ class HotelsPicturesSeeder extends Seeder
             ],
             [
                 'hotel_id' => 8,
-                'filepath' => 'hotels/600x400.webp',
+                'filepath' => 'hotels/1280x720.webp',
                 'filesize' => 2048,
                 'position' => 2,
                 'created_at' => now (),
@@ -152,7 +152,7 @@ class HotelsPicturesSeeder extends Seeder
             // Hotel 9
             [
                 'hotel_id' => 9,
-                'filepath' => 'hotels/600x400.webp',
+                'filepath' => 'hotels/1280x720.webp',
                 'filesize' => 2048,
                 'position' => 1,
                 'created_at' => now (),
@@ -160,7 +160,7 @@ class HotelsPicturesSeeder extends Seeder
             ],
             [
                 'hotel_id' => 9,
-                'filepath' => 'hotels/600x400.webp',
+                'filepath' => 'hotels/1280x720.webp',
                 'filesize' => 2048,
                 'position' => 2,
                 'created_at' => now (),
@@ -169,7 +169,7 @@ class HotelsPicturesSeeder extends Seeder
             // Hotel 10
             [
                 'hotel_id' => 10,
-                'filepath' => 'hotels/600x400.webp',
+                'filepath' => 'hotels/1280x720.webp',
                 'filesize' => 2048,
                 'position' => 1,
                 'created_at' => now (),
@@ -177,7 +177,7 @@ class HotelsPicturesSeeder extends Seeder
             ],
             [
                 'hotel_id' => 10,
-                'filepath' => 'hotels/600x400.webp',
+                'filepath' => 'hotels/1280x720.webp',
                 'filesize' => 2048,
                 'position' => 2,
                 'created_at' => now (),
