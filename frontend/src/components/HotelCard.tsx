@@ -16,10 +16,15 @@ interface HotelCardProps {
   hotel: Hotel;
   onEdit?: (hotel: Hotel) => void;
   onDelete?: (hotel: Hotel) => void;
-  showActions?: boolean;
-  onClick?: () => void;
+  showActions?: boolean; // Affiche les boutons éditer/supprimer si true
+  onClick?: () => void; // Action au clic sur la carte (navigation)
 }
 
+/**
+ * Carte d'affichage d'un hôtel
+ * Utilisé dans la grille de la page publique et de gestion
+ * Deux modes : cliquable (navigation) ou avec actions (édition/suppression)
+ */
 export default function HotelCard({
   hotel,
   onEdit,
@@ -28,6 +33,7 @@ export default function HotelCard({
   onClick,
 }: HotelCardProps) {
   const handleCardClick = () => {
+    // Désactive le clic si en mode actions pour éviter les conflits
     if (showActions) return;
     onClick?.();
   };

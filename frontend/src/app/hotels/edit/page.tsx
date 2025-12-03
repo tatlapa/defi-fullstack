@@ -11,6 +11,11 @@ import AddHotelDialog from "@/components/dialogs/AddHotelDialog";
 import EditHotelDialog from "@/components/dialogs/EditHotelDialog";
 import DeleteHotelDialog from "@/components/dialogs/DeleteHotelDialog";
 
+/**
+ * Page de gestion des hôtels (CRUD)
+ * Permet la création, modification et suppression des hôtels
+ * Affichage au choix : grille ou tableau
+ */
 export default function HotelManagement() {
   const { hotels, fetchHotels, loading, pagination } = useHotelStore();
   const [addDialogOpen, setAddDialogOpen] = useState(false);

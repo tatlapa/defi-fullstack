@@ -48,9 +48,10 @@ class HotelController extends Controller
 
     /**
      * Crée un nouvel hôtel avec ses images
+     * Les images sont stockées dans storage/app/public/hotels
      */
     public function createHotel(Request $request)
-    {   
+    {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'address1' => 'required|string',
@@ -66,59 +67,78 @@ class HotelController extends Controller
             'pictures' => 'required|array|min:1',
             'pictures.*' => 'image|mimes:jpeg,png,webp|max:5120'
         ]);
-        
+
         try {
             $hotel = Hotel::create($validated);
 
-            // Enregistre chaque image uploadée
+            // Upload et enregistrement de chaque image avec sa position
             foreach ($request->file('pictures') as $index => $file) {
+                // Stockage dans public/hotels avec nom unique généré par Laravel
                 $path = $file->store('hotels', 'public');
-                
+
                 HotelsPicture::create([
                     'hotel_id' => $hotel->id,
                     'filepath' => $path,
                     'filesize' => $file->getSize(),
-                    'position' => $index + 1
+                    'position' => $index // Position commence à 0
                 ]);
             }
-            
+
             return response()->json([
                 'message' => 'Hotel created successfully',
                 'hotel' => $hotel->load('pictures')
             ], 201);
-            
+
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to create hotel'], 500);
+            return response()->json([
+                'error' => 'Failed to create hotel',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 
     /**
      * Supprime un hôtel et ses images associées
+     * Nettoie le système de fichiers ET la base de données
      */
     public function deleteHotel($id)
     {
-        $hotel = Hotel::find($id);
-        
+        $hotel = Hotel::with('pictures')->find($id);
+
         if (!$hotel) {
             return response()->json(['error' => 'Hotel not found'], 404);
         }
 
         try {
-            // Supprime les fichiers images du storage puis les entrées en BDD
+            // Suppression de toutes les images physiques puis leurs entrées BDD
             foreach ($hotel->pictures as $picture) {
-                Storage::disk('public')->delete($picture->filepath);
+                // Suppression du fichier du storage
+                if (Storage::disk('public')->exists($picture->filepath)) {
+                    Storage::disk('public')->delete($picture->filepath);
+                }
+                // Suppression de l'entrée en BDD
                 $picture->delete();
             }
 
+            // Suppression de l'hôtel (cascade automatique si configuré)
             $hotel->delete();
-            
+
             return response()->json(['message' => 'Hotel deleted successfully'], 200);
-            
+
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to delete hotel'], 500);
+            return response()->json([
+                'error' => 'Failed to delete hotel',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 
+    /**
+     * Met à jour un hôtel avec gestion avancée des images
+     * - Suppression des images marquées comme deleted
+     * - Mise à jour des positions des images existantes
+     * - Ajout de nouvelles images
+     */
     public function updateHotel(Request $request, $id)
     {
         $hotel = Hotel::with('pictures')->find($id);
@@ -144,55 +164,73 @@ class HotelController extends Controller
 
         // Validation des images
         $validatedImages = $request->validate([
-            'new_pictures'         => 'sometimes|array',
-            'new_pictures.*'       => 'image|mimes:jpeg,png,webp|max:5120',
-            'delete_pictures'      => 'sometimes|array',
-            'delete_pictures.*'    => 'integer'
+            'pictures'             => 'sometimes|array',
+            'pictures.*'           => 'image|mimes:jpeg,png,webp|max:5120',
+            'existing_pictures'    => 'sometimes|array',
+            'existing_pictures.*.id' => 'required|integer',
+            'existing_pictures.*.position' => 'required|integer',
+            'deleted_pictures'     => 'sometimes|array',
+            'deleted_pictures.*'   => 'integer'
         ]);
 
         try {
-
-            // Mise à jour de l'hôtel (OK maintenant)
+            // 1. Mise à jour des données de l'hôtel
             $hotel->update($validatedData);
 
-            // Suppression d'images
-            if ($request->has('delete_pictures')) {
-                foreach ($request->delete_pictures as $picId) {
-
+            // 2. Suppression des images marquées pour suppression
+            if ($request->has('deleted_pictures')) {
+                foreach ($request->deleted_pictures as $picId) {
                     $picture = $hotel->pictures()->find($picId);
 
                     if ($picture) {
+                        // Suppression du fichier physique
                         Storage::disk('public')->delete($picture->filepath);
+                        // Suppression de l'entrée BDD
                         $picture->delete();
                     }
                 }
             }
 
-            // Ajout de nouvelles images
-            if ($request->hasFile('new_pictures')) {
+            // 3. Mise à jour des positions des images existantes
+            if ($request->has('existing_pictures')) {
+                foreach ($request->existing_pictures as $existingPicture) {
+                    $picture = $hotel->pictures()->find($existingPicture['id']);
 
-                $currentPosition = $hotel->pictures()->max('position') ?? 0;
+                    if ($picture) {
+                        $picture->update(['position' => $existingPicture['position']]);
+                    }
+                }
+            }
 
-                foreach ($request->file('new_pictures') as $index => $file) {
+            // 4. Ajout de nouvelles images
+            if ($request->hasFile('pictures')) {
+                // Calcul de la position de départ pour les nouvelles images
+                $existingCount = $request->has('existing_pictures')
+                    ? count($request->existing_pictures)
+                    : 0;
 
+                foreach ($request->file('pictures') as $index => $file) {
                     $path = $file->store('hotels', 'public');
 
                     HotelsPicture::create([
                         'hotel_id' => $hotel->id,
                         'filepath' => $path,
                         'filesize' => $file->getSize(),
-                        'position' => $currentPosition + $index + 1
+                        'position' => $existingCount + $index
                     ]);
                 }
             }
 
             return response()->json([
                 'message' => 'Hotel updated successfully',
-                'hotel'   => $hotel->load('pictures')
+                'hotel'   => $hotel->fresh()->load('pictures')
             ], 200);
 
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to update hotel'], 500);
+            return response()->json([
+                'error' => 'Failed to update hotel',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 }

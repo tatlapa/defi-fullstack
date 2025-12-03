@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\HotelsPicture;
 
+/**
+ * Modèle Hotel
+ * Représente un établissement hôtelier avec ses informations et images
+ */
 class Hotel extends Model
 {
     use HasFactory;
@@ -23,13 +27,20 @@ class Hotel extends Model
         'max_capacity',
         'price_per_night',
     ];
-    
 
+    /**
+     * Relation one-to-many avec HotelsPicture
+     * Un hôtel peut avoir plusieurs images triées par position
+     */
     public function pictures()
     {
-        return $this->hasMany(HotelsPicture::class);
+        return $this->hasMany(HotelsPicture::class)->orderBy('position');
     }
 
+    /**
+     * Scope pour filtrer les hôtels
+     * Supporte : nom (LIKE), ville (exact), tri personnalisé
+     */
     public function scopeFilter($query, $filters)
     {
         if (!empty($filters['name'])) {

@@ -41,12 +41,16 @@ interface HotelFormProps {
   onSubmit: (data: FormData) => Promise<void>;
 }
 
+/**
+ * Représente une image dans le formulaire
+ * Unifie les images existantes (déjà stockées) et les nouvelles (fichiers à uploader)
+ */
 interface ImageItem {
   id: string;
-  preview: string;
-  isExisting: boolean;
-  file?: File;
-  existingPicture?: HotelsPicture;
+  preview: string; // URL pour affichage (blob ou URL backend)
+  isExisting: boolean; // true = image déjà en BDD, false = nouveau fichier
+  file?: File; // Fichier source si nouvelle image
+  existingPicture?: HotelsPicture; // Données BDD si image existante
 }
 
 interface SortableImageProps {
@@ -144,6 +148,7 @@ export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Chargement des images existantes triées par position
   const initialImages: ImageItem[] = hotel?.pictures
     ? [...hotel.pictures]
         .sort((a, b) => a.position - b.position)
@@ -156,6 +161,7 @@ export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
     : [];
 
   const [images, setImages] = useState<ImageItem[]>(initialImages);
+  // Track des IDs des images à supprimer (envoyé au backend)
   const [deletedPictureIds, setDeletedPictureIds] = useState<number[]>([]);
 
   const [formData, setFormData] = useState({
@@ -218,6 +224,7 @@ export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
     e.preventDefault();
     setIsDragging(false);
 
+    // Filtrage pour accepter uniquement les images
     const files = Array.from(e.dataTransfer.files).filter((file) =>
       file.type.startsWith("image/")
     );
@@ -227,6 +234,7 @@ export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
     }
   };
 
+  // Gestion du réordonnancement des images par drag & drop
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -243,14 +251,17 @@ export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
   const removeImage = (index: number) => {
     const imageToRemove = images[index];
 
+    // Si image existante, on l'ajoute à la liste de suppression
     if (imageToRemove.isExisting && imageToRemove.existingPicture) {
       setDeletedPictureIds([...deletedPictureIds, imageToRemove.existingPicture.id]);
     } else if (!imageToRemove.isExisting) {
+      // Libération mémoire pour les blob URLs
       URL.revokeObjectURL(imageToRemove.preview);
     }
 
     setImages(images.filter((_, i) => i !== index));
 
+    // Reset de l'input pour permettre de re-sélectionner les mêmes fichiers
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -260,19 +271,24 @@ export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
     e.preventDefault();
 
     const data = new FormData();
+    // Ajout des données du formulaire
     Object.entries(formData).forEach(([key, value]) => {
       data.append(key, value as string);
     });
 
+    // Gestion des images : position basée sur l'ordre dans le tableau
     images.forEach((image, index) => {
       if (image.isExisting && image.existingPicture) {
+        // Images existantes : envoi de l'ID et nouvelle position
         data.append(`existing_pictures[${index}][id]`, image.existingPicture.id.toString());
         data.append(`existing_pictures[${index}][position]`, index.toString());
       } else if (!image.isExisting && image.file) {
+        // Nouvelles images : envoi des fichiers
         data.append("pictures[]", image.file);
       }
     });
 
+    // Envoi des IDs des images à supprimer
     deletedPictureIds.forEach((id) => {
       data.append("deleted_pictures[]", id.toString());
     });

@@ -22,7 +22,13 @@ export default function DeleteHotelDialog({
     setLoading(true);
     try {
       await hotelStore.deleteHotel(hotel.id);
-      await hotelStore.fetchHotels({ page: hotelStore.pagination?.current_page || 1, per_page: 12 });
+
+      // Rafraîchissement en restant sur la page actuelle
+      await hotelStore.fetchHotels({
+        page: hotelStore.pagination?.current_page || 1,
+        per_page: 12,
+      });
+
       toaster.create({
         title: "Hôtel supprimé avec succès",
         description: "L'hôtel a été retiré de la liste",
@@ -48,7 +54,7 @@ export default function DeleteHotelDialog({
       <Dialog.Backdrop />
       <Dialog.Positioner>
         <Dialog.Content>
-        <Dialog.CloseTrigger>
+        <Dialog.CloseTrigger asChild>
             <CloseButton size="sm" />
           </Dialog.CloseTrigger>
           <Dialog.Header>

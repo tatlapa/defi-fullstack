@@ -23,10 +23,13 @@ export default function EditHotelDialog({
     setLoading(true);
     try {
       await hotelStore.updateHotel(hotel.id, data);
+
+      // Rafraîchissement de la liste en restant sur la page actuelle
       await hotelStore.fetchHotels({
         page: hotelStore.pagination?.current_page || 1,
         per_page: 12,
       });
+
       toaster.create({
         title: "Hôtel modifié avec succès",
         description: "Les modifications ont été enregistrées",
@@ -52,7 +55,7 @@ export default function EditHotelDialog({
       <Dialog.Backdrop />
       <Dialog.Positioner>
         <Dialog.Content maxH="90vh" overflowY="auto">
-          <Dialog.CloseTrigger>
+          <Dialog.CloseTrigger asChild>
             <CloseButton size="sm" />
           </Dialog.CloseTrigger>
           <Dialog.Header>

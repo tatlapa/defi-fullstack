@@ -31,10 +31,15 @@ import {
   LuUsers,
 } from "react-icons/lu";
 
+/**
+ * Page de détails d'un hôtel
+ * Affiche les informations complètes et le carrousel d'images
+ */
 export default function HotelPage() {
   const params = useParams();
   const { currentHotel, fetchHotel, loading, error } = useHotelStore();
 
+  // Chargement des détails de l'hôtel via l'ID dans l'URL
   useEffect(() => {
     if (params.id) {
       fetchHotel(params.id as string);

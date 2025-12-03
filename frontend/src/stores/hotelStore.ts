@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { Hotel } from '../types';
 
+/**
+ * Métadonnées de pagination retournées par l'API Laravel
+ */
 interface PaginationMeta {
   current_page: number;
   last_page: number;
@@ -8,6 +11,10 @@ interface PaginationMeta {
   total: number;
 }
 
+/**
+ * Store Zustand pour la gestion des hôtels
+ * Centralise l'état et les opérations CRUD
+ */
 interface HotelStore {
   hotels: Hotel[];
   currentHotel?: Hotel;
@@ -33,6 +40,7 @@ export const useHotelStore = create<HotelStore>((set) => ({
   fetchHotels: async (params) => {
     set({ loading: true, error: undefined });
     try {
+      // Construction des paramètres de pagination pour l'API
       const queryParams = new URLSearchParams();
       if (params?.page) queryParams.append('page', params.page.toString());
       if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
@@ -40,6 +48,8 @@ export const useHotelStore = create<HotelStore>((set) => ({
       const url = `/api/hotels${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       const res = await fetch(url);
       const data = await res.json();
+
+      // Stockage des hôtels et des métadonnées de pagination
       set({
         hotels: data.data || [],
         pagination: data.meta
@@ -68,6 +78,7 @@ export const useHotelStore = create<HotelStore>((set) => ({
   createHotel: async (formData: FormData) => {
     set({ loading: true, error: undefined });
     try {
+      // Envoi du FormData pour supporter l'upload d'images
       const res = await fetch(`/api/hotels`, {
         method: 'POST',
         body: formData,
@@ -86,6 +97,7 @@ export const useHotelStore = create<HotelStore>((set) => ({
   updateHotel: async (id: number, formData: FormData) => {
     set({ loading: true, error: undefined });
     try {
+      // PATCH pour mise à jour partielle avec support multipart/form-data
       const res = await fetch(`/api/hotels/${id}`, {
         method: 'PATCH',
         body: formData,
@@ -108,6 +120,8 @@ export const useHotelStore = create<HotelStore>((set) => ({
         method: 'DELETE',
       });
       if (!res.ok) throw new Error('Failed to delete hotel');
+
+      // Mise à jour optimiste : suppression immédiate de la liste locale
       set((state) => ({
         hotels: state.hotels.filter((h) => h.id !== id),
       }));

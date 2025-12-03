@@ -3,23 +3,29 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useHotelStore } from "@/stores/hotelStore";
-import { Box, Heading, Grid, HStack, Text, Pagination, ButtonGroup, IconButton } from "@chakra-ui/react";
+import { Box, Heading, Grid, Text, Pagination, ButtonGroup, IconButton } from "@chakra-ui/react";
 import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
 import HotelCard from "@/components/HotelCard";
 import HotelCardSkeleton from "@/components/HotelCardSkeleton";
 
+/**
+ * Page publique d'affichage des hôtels
+ * Affiche une grille paginée avec 12 hôtels par page
+ */
 export default function HotelsPage() {
   const router = useRouter();
   const { hotels, fetchHotels, loading, pagination } = useHotelStore();
   const [currentPage, setCurrentPage] = useState(1);
   const perPage = 12;
 
+  // Chargement des hôtels à chaque changement de page
   useEffect(() => {
     fetchHotels({ page: currentPage, per_page: perPage });
   }, [currentPage, fetchHotels]);
 
   const handlePageChange = (details: { page: number }) => {
     setCurrentPage(details.page);
+    // Scroll vers le haut pour une meilleure UX
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 

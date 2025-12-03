@@ -18,7 +18,10 @@ export default function AddHotelDialog({ onClose }: AddHotelDialogProps) {
     setLoading(true);
     try {
       await hotelStore.createHotel(data);
+
+      // Retour à la page 1 après création pour afficher le nouvel hôtel
       await hotelStore.fetchHotels({ page: 1, per_page: 12 });
+
       toaster.create({
         title: "Hôtel créé avec succès",
         description: "L'hôtel a été ajouté à la liste",
@@ -44,7 +47,7 @@ export default function AddHotelDialog({ onClose }: AddHotelDialogProps) {
       <Dialog.Backdrop />
       <Dialog.Positioner>
         <Dialog.Content maxH="90vh" overflowY="auto">
-          <Dialog.CloseTrigger>
+          <Dialog.CloseTrigger asChild>
             <CloseButton size="sm" />
           </Dialog.CloseTrigger>
           <Dialog.Header>
