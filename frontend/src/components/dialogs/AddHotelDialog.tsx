@@ -12,15 +12,10 @@ interface AddHotelDialogProps {
 
 export default function AddHotelDialog({ onClose }: AddHotelDialogProps) {
   const hotelStore = useHotelStore();
-  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (data: FormData) => {
-    setLoading(true);
     try {
       await hotelStore.createHotel(data);
-
-      // Retour à la page 1 après création pour afficher le nouvel hôtel
-      await hotelStore.fetchHotels({ page: 1, per_page: 12 });
 
       toaster.create({
         title: "Hôtel créé avec succès",
@@ -29,16 +24,15 @@ export default function AddHotelDialog({ onClose }: AddHotelDialogProps) {
         duration: 5000,
       });
       onClose();
-    } catch (error) {
-      console.error("Error creating hotel:", error);
+    } catch (error: any) {
       toaster.create({
         title: "Erreur lors de la création",
-        description: "Impossible de créer l'hôtel. Veuillez réessayer.",
+        description:
+          error.response?.data?.message ||
+          "Impossible de créer l'hôtel. Veuillez réessayer.",
         type: "error",
         duration: 5000,
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -69,7 +63,7 @@ export default function AddHotelDialog({ onClose }: AddHotelDialogProps) {
               form="add-hotel-form"
               bg="brand.600"
               color="white"
-              loading={loading}
+              loading={hotelStore.loading}
               loadingText="Création..."
               _hover={{ bg: "brand.700" }}
             >

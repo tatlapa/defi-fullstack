@@ -19,8 +19,9 @@ interface HotelStore {
   hotels: Hotel[];
   currentHotel?: Hotel;
   loading: boolean;
-  error?: string;
+  error?: Error;
   pagination?: PaginationMeta;
+  apiErrors: Record<string, string[]>;
 
   fetchHotels: (params?: { page?: number; per_page?: number }) => Promise<void>;
   fetchHotel: (id: string) => Promise<void>;
@@ -28,6 +29,7 @@ interface HotelStore {
   updateHotel: (id: number, formData: FormData) => Promise<void>;
   deleteHotel: (id: number) => Promise<void>;
   clearCurrentHotel: () => void;
+  clearApiErrors: () => void;
 }
 
 export const useHotelStore = create<HotelStore>((set) => ({
@@ -36,6 +38,7 @@ export const useHotelStore = create<HotelStore>((set) => ({
   loading: false,
   error: undefined,
   pagination: undefined,
+  apiErrors: {},
 
   fetchHotels: async (params) => {
     set({ loading: true, error: undefined });
@@ -76,16 +79,23 @@ export const useHotelStore = create<HotelStore>((set) => ({
   },
 
   createHotel: async (formData: FormData) => {
-    set({ loading: true, error: undefined });
+    set({ loading: true, error: undefined, apiErrors: {} });
     try {
-      // Envoi du FormData pour supporter l'upload d'images
       const res = await fetch(`/api/hotels`, {
         method: 'POST',
         body: formData,
       });
-      if (!res.ok) throw new Error('Failed to create hotel');
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        if (res.status === 422 && errorData.errors) {
+          set({ apiErrors: errorData.errors });
+        }
+        throw errorData;
+      }
+
       const data = await res.json();
-      set({ currentHotel: data.hotel });
+      set({ currentHotel: data.hotel, apiErrors: {} });
     } catch (err: any) {
       set({ error: err.message || 'Failed to create hotel' });
       throw err;
@@ -95,16 +105,23 @@ export const useHotelStore = create<HotelStore>((set) => ({
   },
 
   updateHotel: async (id: number, formData: FormData) => {
-    set({ loading: true, error: undefined });
+    set({ loading: true, error: undefined, apiErrors: {} });
     try {
-      // PATCH pour mise à jour partielle avec support multipart/form-data
       const res = await fetch(`/api/hotels/${id}`, {
         method: 'PATCH',
         body: formData,
       });
-      if (!res.ok) throw new Error('Failed to update hotel');
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        if (res.status === 422 && errorData.errors) {
+          set({ apiErrors: errorData.errors });
+        }
+        throw errorData;
+      }
+
       const data = await res.json();
-      set({ currentHotel: data.hotel });
+      set({ currentHotel: data.hotel, apiErrors: {} });
     } catch (err: any) {
       set({ error: err.message || 'Failed to update hotel' });
       throw err;
@@ -120,8 +137,6 @@ export const useHotelStore = create<HotelStore>((set) => ({
         method: 'DELETE',
       });
       if (!res.ok) throw new Error('Failed to delete hotel');
-
-      // Mise à jour optimiste : suppression immédiate de la liste locale
       set((state) => ({
         hotels: state.hotels.filter((h) => h.id !== id),
       }));
@@ -134,4 +149,6 @@ export const useHotelStore = create<HotelStore>((set) => ({
   },
 
   clearCurrentHotel: () => set({ currentHotel: undefined }),
+
+  clearApiErrors: () => set({ apiErrors: {} }),
 }));

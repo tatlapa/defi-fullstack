@@ -1,14 +1,14 @@
 "use client";
 
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useRef } from "react";
 import { Hotel, HotelsPicture } from "@/types";
 import {
   Box,
-  Field,
   Input,
   Stack,
   VStack,
-  Textarea,
   Heading,
   Grid,
   GridItem,
@@ -16,6 +16,9 @@ import {
   IconButton,
   Text,
 } from "@chakra-ui/react";
+import { FormField } from "./FormField";
+import { hotelSchema, HotelFormData } from "@/schemas/hotelSchema";
+import { useHotelStore } from "@/stores/hotelStore";
 import { LuCircleX, LuGripVertical } from "react-icons/lu";
 import {
   DndContext,
@@ -41,13 +44,15 @@ interface HotelFormProps {
   onSubmit: (data: FormData) => Promise<void>;
 }
 
+
+
 /**
  * Représente une image dans le formulaire
  * Unifie les images existantes (déjà stockées) et les nouvelles (fichiers à uploader)
  */
 interface ImageItem {
   id: string;
-  preview: string; // URL pour affichage (blob ou URL backend)
+  preview: string; // URL pour affichage
   isExisting: boolean; // true = image déjà en BDD, false = nouveau fichier
   file?: File; // Fichier source si nouvelle image
   existingPicture?: HotelsPicture; // Données BDD si image existante
@@ -144,7 +149,11 @@ function SortableImage({ id, preview, index, onRemove }: SortableImageProps) {
   );
 }
 
-export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
+export default function HotelForm({
+  hotel,
+  formId,
+  onSubmit,
+}: HotelFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -164,18 +173,16 @@ export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
   // Track des IDs des images à supprimer (envoyé au backend)
   const [deletedPictureIds, setDeletedPictureIds] = useState<number[]>([]);
 
-  const [formData, setFormData] = useState({
-    name: hotel?.name || "",
-    address1: hotel?.address1 || "",
-    address2: hotel?.address2 || "",
-    zipcode: hotel?.zipcode || "",
-    city: hotel?.city || "",
-    country: hotel?.country || "",
-    lat: hotel?.lat?.toString() || "",
-    lng: hotel?.lng?.toString() || "",
-    description: hotel?.description || "",
-    max_capacity: hotel?.max_capacity || 1,
-    price_per_night: hotel?.price_per_night || 0,
+  // Récupération des erreurs API Laravel depuis le store
+  const apiErrors = useHotelStore((state) => state.apiErrors);
+
+  // Configuration React Hook Form avec zodResolver
+  const {
+    register,
+    handleSubmit: handleFormSubmit,
+    formState: { errors },
+  } = useForm<HotelFormData>({
+    resolver: zodResolver(hotelSchema),
   });
 
   const sensors = useSensors(
@@ -184,13 +191,6 @@ export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
 
   const addFiles = (files: File[]) => {
     const newImages: ImageItem[] = files.map((file, index) => ({
@@ -253,7 +253,10 @@ export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
 
     // Si image existante, on l'ajoute à la liste de suppression
     if (imageToRemove.isExisting && imageToRemove.existingPicture) {
-      setDeletedPictureIds([...deletedPictureIds, imageToRemove.existingPicture.id]);
+      setDeletedPictureIds([
+        ...deletedPictureIds,
+        imageToRemove.existingPicture.id,
+      ]);
     } else if (!imageToRemove.isExisting) {
       // Libération mémoire pour les blob URLs
       URL.revokeObjectURL(imageToRemove.preview);
@@ -267,20 +270,22 @@ export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const onFormSubmit = handleFormSubmit(async (formData) => {
     const data = new FormData();
+
     // Ajout des données du formulaire
     Object.entries(formData).forEach(([key, value]) => {
-      data.append(key, value as string);
+      data.append(key, value.toString());
     });
 
     // Gestion des images : position basée sur l'ordre dans le tableau
     images.forEach((image, index) => {
       if (image.isExisting && image.existingPicture) {
         // Images existantes : envoi de l'ID et nouvelle position
-        data.append(`existing_pictures[${index}][id]`, image.existingPicture.id.toString());
+        data.append(
+          `existing_pictures[${index}][id]`,
+          image.existingPicture.id.toString()
+        );
         data.append(`existing_pictures[${index}][position]`, index.toString());
       } else if (!image.isExisting && image.file) {
         // Nouvelles images : envoi des fichiers
@@ -294,73 +299,54 @@ export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
     });
 
     await onSubmit(data);
-  };
+  });
 
   return (
-    <form onSubmit={handleSubmit} id={formId}>
+    <form onSubmit={onFormSubmit} id={formId}>
       <Stack gap={6}>
         <Box>
           <Heading size="sm" mb={4} color="gray.700">
             Informations générales
           </Heading>
-          <Grid
-            templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
-            gap={4}
-          >
+          <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={4}>
             <GridItem colSpan={{ base: 1, md: 2 }}>
-              <Field.Root>
-                <Field.Label>Nom de l&apos;hôtel</Field.Label>
-                <Input
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Hôtel Paradise"
-                  required
-                />
-              </Field.Root>
+              <FormField
+                label="Nom de l'hôtel"
+                placeholder="Hôtel Paradise"
+                error={errors.name?.message || apiErrors.name?.[0]}
+                {...register("name")}
+              />
             </GridItem>
 
             <GridItem>
-              <Field.Root>
-                <Field.Label>Prix par nuit (€)</Field.Label>
-                <Input
-                  name="price_per_night"
-                  type="number"
-                  step="0.01"
-                  value={formData.price_per_night}
-                  onChange={handleChange}
-                  placeholder="99.00"
-                  required
-                />
-              </Field.Root>
+              <FormField
+                label="Prix par nuit (€)"
+                type="number"
+                placeholder="99.00"
+                error={errors.price_per_night?.message || apiErrors.price_per_night?.[0]}
+                {...register("price_per_night", { valueAsNumber: true })}
+              />
             </GridItem>
 
             <GridItem>
-              <Field.Root>
-                <Field.Label>Capacité maximale</Field.Label>
-                <Input
-                  name="max_capacity"
-                  type="number"
-                  value={formData.max_capacity}
-                  onChange={handleChange}
-                  placeholder="4"
-                  required
-                />
-              </Field.Root>
+              <FormField
+                label="Capacité maximale"
+                type="number"
+                placeholder="4"
+                error={errors.max_capacity?.message || apiErrors.max_capacity?.[0]}
+                {...register("max_capacity", { valueAsNumber: true })}
+              />
             </GridItem>
 
             <GridItem colSpan={{ base: 1, md: 2 }}>
-              <Field.Root>
-                <Field.Label>Description</Field.Label>
-                <Textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Décrivez votre hôtel..."
-                  rows={3}
-                  required
-                />
-              </Field.Root>
+              <FormField
+                label="Description"
+                placeholder="Décrivez votre hôtel..."
+                isTextarea
+                rows={3}
+                error={errors.description?.message || apiErrors.description?.[0]}
+                {...register("description")}
+              />
             </GridItem>
           </Grid>
         </Box>
@@ -369,72 +355,50 @@ export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
           <Heading size="sm" mb={4} color="gray.700">
             Adresse
           </Heading>
-          <Grid
-            templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
-            gap={4}
-          >
+          <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={4}>
             <GridItem colSpan={{ base: 1, md: 2 }}>
-              <Field.Root>
-                <Field.Label>Adresse ligne 1</Field.Label>
-                <Input
-                  name="address1"
-                  value={formData.address1}
-                  onChange={handleChange}
-                  placeholder="123 Rue de la Paix"
-                  required
-                />
-              </Field.Root>
+              <FormField
+                label="Adresse ligne 1"
+                placeholder="123 Rue de la Paix"
+                error={errors.address1?.message || apiErrors.address1?.[0]}
+                {...register("address1")}
+              />
             </GridItem>
 
             <GridItem colSpan={{ base: 1, md: 2 }}>
-              <Field.Root>
-                <Field.Label>Adresse ligne 2</Field.Label>
-                <Input
-                  name="address2"
-                  value={formData.address2}
-                  onChange={handleChange}
-                  placeholder="Bâtiment A, 3ème étage"
-                />
-              </Field.Root>
+              <FormField
+                label="Adresse ligne 2"
+                placeholder="Bâtiment A, 3ème étage"
+                error={errors.address2?.message || apiErrors.address2?.[0]}
+                {...register("address2")}
+              />
             </GridItem>
 
             <GridItem>
-              <Field.Root>
-                <Field.Label>Code postal</Field.Label>
-                <Input
-                  name="zipcode"
-                  value={formData.zipcode}
-                  onChange={handleChange}
-                  placeholder="75001"
-                  required
-                />
-              </Field.Root>
+              <FormField
+                label="Code postal"
+                placeholder="75001"
+                error={errors.zipcode?.message || apiErrors.zipcode?.[0]}
+                {...register("zipcode")}
+              />
             </GridItem>
 
             <GridItem>
-              <Field.Root>
-                <Field.Label>Ville</Field.Label>
-                <Input
-                  name="city"
-                  value={formData.city}
-                  onChange={handleChange}
-                  placeholder="Paris"
-                  required
-                />
-              </Field.Root>
+              <FormField
+                label="Ville"
+                placeholder="Paris"
+                error={errors.city?.message || apiErrors.city?.[0]}
+                {...register("city")}
+              />
             </GridItem>
 
             <GridItem colSpan={{ base: 1, md: 2 }}>
-              <Field.Root>
-                <Field.Label>Pays</Field.Label>
-                <Input
-                  name="country"
-                  value={formData.country}
-                  onChange={handleChange}
-                  placeholder="France"
-                  required
-                />
-              </Field.Root>
+              <FormField
+                label="Pays"
+                placeholder="France"
+                error={errors.country?.message || apiErrors.country?.[0]}
+                {...register("country")}
+              />
             </GridItem>
           </Grid>
         </Box>
@@ -443,38 +407,25 @@ export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
           <Heading size="sm" mb={4} color="gray.700">
             Coordonnées GPS
           </Heading>
-          <Grid
-            templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
-            gap={4}
-          >
+          <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={4}>
             <GridItem>
-              <Field.Root>
-                <Field.Label>Latitude</Field.Label>
-                <Input
-                  name="lat"
-                  type="number"
-                  step="any"
-                  value={formData.lat}
-                  onChange={handleChange}
-                  placeholder="48.8566"
-                  required
-                />
-              </Field.Root>
+              <FormField
+                label="Latitude"
+                type="text"
+                placeholder="48.8566"
+                error={errors.lat?.message || apiErrors.lat?.[0]}
+                {...register("lat")}
+              />
             </GridItem>
 
             <GridItem>
-              <Field.Root>
-                <Field.Label>Longitude</Field.Label>
-                <Input
-                  name="lng"
-                  type="number"
-                  step="any"
-                  value={formData.lng}
-                  onChange={handleChange}
-                  placeholder="2.3522"
-                  required
-                />
-              </Field.Root>
+              <FormField
+                label="Longitude"
+                type="text"
+                placeholder="2.3522"
+                error={errors.lng?.message || apiErrors.lng?.[0]}
+                {...register("lng")}
+              />
             </GridItem>
           </Grid>
         </Box>
@@ -515,18 +466,31 @@ export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
           )}
 
           <Box>
-            <Text fontSize="sm" fontWeight="medium" mb={2} color={{ base: "gray.700", _dark: "gray.300" }}>
+            <Text
+              fontSize="sm"
+              fontWeight="medium"
+              mb={2}
+              color={{ base: "gray.700", _dark: "gray.300" }}
+            >
               {hotel ? "Ajouter de nouvelles images" : "Ajouter des images"}
             </Text>
 
             <Box
               borderWidth="2px"
               borderStyle="dashed"
-              borderColor={isDragging ? "brand.600" : { base: "gray.300", _dark: "gray.600" }}
+              borderColor={
+                isDragging
+                  ? "brand.600"
+                  : { base: "gray.300", _dark: "gray.600" }
+              }
               borderRadius="lg"
               p={8}
               textAlign="center"
-              bg={isDragging ? { base: "brand.50", _dark: "brand.900/20" } : { base: "gray.50", _dark: "gray.800" }}
+              bg={
+                isDragging
+                  ? { base: "brand.50", _dark: "brand.900/20" }
+                  : { base: "gray.50", _dark: "gray.800" }
+              }
               transition="all 0.2s"
               cursor="pointer"
               onDragOver={handleDragOver}
@@ -549,13 +513,25 @@ export default function HotelForm({ hotel, formId, onSubmit }: HotelFormProps) {
               />
 
               <VStack gap={2}>
-                <Text fontSize="lg" fontWeight="medium" color={{ base: "gray.700", _dark: "gray.300" }}>
-                  {isDragging ? "Déposez vos images ici" : "Glissez-déposez vos images"}
+                <Text
+                  fontSize="lg"
+                  fontWeight="medium"
+                  color={{ base: "gray.700", _dark: "gray.300" }}
+                >
+                  {isDragging
+                    ? "Déposez vos images ici"
+                    : "Glissez-déposez vos images"}
                 </Text>
-                <Text fontSize="sm" color={{ base: "gray.500", _dark: "gray.400" }}>
+                <Text
+                  fontSize="sm"
+                  color={{ base: "gray.500", _dark: "gray.400" }}
+                >
                   ou cliquez pour sélectionner
                 </Text>
-                <Text fontSize="xs" color={{ base: "gray.400", _dark: "gray.500" }}>
+                <Text
+                  fontSize="xs"
+                  color={{ base: "gray.400", _dark: "gray.500" }}
+                >
                   JPEG, PNG, WEBP (max 5MB par image)
                 </Text>
               </VStack>

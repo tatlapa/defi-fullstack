@@ -17,18 +17,10 @@ export default function EditHotelDialog({
   onClose,
 }: EditHotelDialogProps) {
   const hotelStore = useHotelStore();
-  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (data: FormData) => {
-    setLoading(true);
     try {
       await hotelStore.updateHotel(hotel.id, data);
-
-      // Rafraîchissement de la liste en restant sur la page actuelle
-      await hotelStore.fetchHotels({
-        page: hotelStore.pagination?.current_page || 1,
-        per_page: 12,
-      });
 
       toaster.create({
         title: "Hôtel modifié avec succès",
@@ -37,16 +29,15 @@ export default function EditHotelDialog({
         duration: 5000,
       });
       onClose();
-    } catch (error) {
-      console.error("Error updating hotel:", error);
+    } catch (error: any) {
       toaster.create({
         title: "Erreur lors de la modification",
-        description: "Impossible de modifier l'hôtel. Veuillez réessayer.",
+        description:
+          error.response?.data?.message ||
+          "Impossible de modifier l'hôtel. Veuillez réessayer.",
         type: "error",
         duration: 5000,
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -82,7 +73,7 @@ export default function EditHotelDialog({
               form="edit-hotel-form"
               bg="brand.600"
               color="white"
-              loading={loading}
+              loading={hotelStore.loading}
               loadingText="Modification..."
               _hover={{ bg: "brand.700" }}
             >

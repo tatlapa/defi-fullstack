@@ -6,6 +6,8 @@ use App\Models\Hotel;
 use App\Models\HotelsPicture;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\CreateHotelRequest;
+use App\Http\Requests\UpdateHotelRequest;
 
 class HotelController extends Controller
 {
@@ -49,26 +51,13 @@ class HotelController extends Controller
     /**
      * Crée un nouvel hôtel avec ses images
      * Les images sont stockées dans storage/app/public/hotels
+     * Validation gérée par CreateHotelRequest
      */
-    public function createHotel(Request $request)
+    public function createHotel(CreateHotelRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'address1' => 'required|string',
-            'address2' => 'nullable|string',
-            'zipcode' => 'required|string',
-            'city' => 'required|string',
-            'country' => 'required|string',
-            'lat' => 'required|numeric|between:-90,90',
-            'lng' => 'required|numeric|between:-180,180',
-            'description' => 'required|string|max:5000',
-            'max_capacity' => 'required|integer|min:1|max:200',
-            'price_per_night' => 'required|numeric|min:0',
-            'pictures' => 'required|array|min:1',
-            'pictures.*' => 'image|mimes:jpeg,png,webp|max:5120'
-        ]);
-
         try {
+            // Les données sont déjà validées par CreateHotelRequest
+            $validated = $request->validated();
             $hotel = Hotel::create($validated);
 
             // Upload et enregistrement de chaque image avec sa position
@@ -138,8 +127,9 @@ class HotelController extends Controller
      * - Suppression des images marquées comme deleted
      * - Mise à jour des positions des images existantes
      * - Ajout de nouvelles images
+     * Validation gérée par UpdateHotelRequest
      */
-    public function updateHotel(Request $request, $id)
+    public function updateHotel(UpdateHotelRequest $request, $id)
     {
         $hotel = Hotel::with('pictures')->find($id);
 
@@ -147,35 +137,17 @@ class HotelController extends Controller
             return response()->json(['error' => 'Hotel not found'], 404);
         }
 
-        // Validation des champs de l'hôtel
-        $validatedData = $request->validate([
-            'name'  => 'sometimes|string|max:255',
-            'address1'  => 'sometimes|string',
-            'address2'  => 'sometimes|nullable|string',
-            'zipcode'   => 'sometimes|string',
-            'city'  => 'sometimes|string',
-            'country'   => 'sometimes|string',
-            'lat'   => 'sometimes|numeric|between:-90,90',
-            'lng'   => 'sometimes|numeric|between:-180,180',
-            'description'   => 'sometimes|string|max:5000',
-            'max_capacity'  => 'sometimes|integer|min:1|max:200',
-            'price_per_night'   => 'sometimes|numeric|min:0',
-        ]);
-
-        // Validation des images
-        $validatedImages = $request->validate([
-            'pictures'             => 'sometimes|array',
-            'pictures.*'           => 'image|mimes:jpeg,png,webp|max:5120',
-            'existing_pictures'    => 'sometimes|array',
-            'existing_pictures.*.id' => 'required|integer',
-            'existing_pictures.*.position' => 'required|integer',
-            'deleted_pictures'     => 'sometimes|array',
-            'deleted_pictures.*'   => 'integer'
-        ]);
-
         try {
+            // Les données sont déjà validées par UpdateHotelRequest
+            $validated = $request->validated();
+
             // 1. Mise à jour des données de l'hôtel
-            $hotel->update($validatedData);
+            // On filtre uniquement les champs de l'hôtel (exclut pictures, existing_pictures, deleted_pictures)
+            $hotelData = array_filter($validated, function($key) {
+                return !in_array($key, ['pictures', 'existing_pictures', 'deleted_pictures']);
+            }, ARRAY_FILTER_USE_KEY);
+
+            $hotel->update($hotelData);
 
             // 2. Suppression des images marquées pour suppression
             if ($request->has('deleted_pictures')) {
