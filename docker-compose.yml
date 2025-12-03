@@ -8,6 +8,7 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/var/www
+      - /var/www/vendor
     environment:
       APP_ENV: local
       APP_DEBUG: true
@@ -26,8 +27,6 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: next_frontend
-    env_file:
-      - ./frontend/.env
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
