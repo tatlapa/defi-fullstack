@@ -8,5 +8,5 @@ Route::controller(HotelController::class)->prefix('hotels')->group(function () {
     Route::get('/{id}', 'getHotel');
     Route::post('/', 'createHotel');
     Route::delete('/{id}', 'deleteHotel');
-    Route::patch('{id}', 'updateHotel');
+    Route::patch('/{id}', 'updateHotel');
 });

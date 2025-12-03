@@ -11,35 +11,20 @@ import {
   Image,
   Skeleton,
   SkeletonText,
-  AspectRatio,
   Dialog,
-  CloseButton,
-  Portal,
-  Carousel,
-  IconButton,
   HStack,
   VStack,
   Badge,
   Separator,
   Card,
 } from "@chakra-ui/react";
-import { useCarouselContext } from "@chakra-ui/react";
-import {
-  LuChevronLeft,
-  LuChevronRight,
-  LuMapPin,
-  LuUsers,
-} from "react-icons/lu";
+import { LuMapPin, LuUsers } from "react-icons/lu";
+import { LightboxGallery } from "@/components/hotel-details/LightboxGallery";
 
-/**
- * Page de détails d'un hôtel
- * Affiche les informations complètes et le carrousel d'images
- */
 export default function HotelPage() {
   const params = useParams();
   const { currentHotel, fetchHotel, loading, error } = useHotelStore();
 
-  // Chargement des détails de l'hôtel via l'ID dans l'URL
   useEffect(() => {
     if (params.id) {
       fetchHotel(params.id as string);
@@ -263,99 +248,5 @@ export default function HotelPage() {
         </Card.Root>
       </Grid>
     </Box>
-  );
-}
-
-function LightboxGallery({
-  images,
-  hotelName,
-}: {
-  images: string[];
-  hotelName: string;
-}) {
-  return (
-    <Portal>
-      <Dialog.Backdrop />
-      <Dialog.Positioner>
-        <Dialog.Content bg="transparent" shadow="none">
-          <Dialog.CloseTrigger asChild>
-            <CloseButton size="sm" color="white" />
-          </Dialog.CloseTrigger>
-
-          <Dialog.Body
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            h="full"
-            p={0}
-          >
-            <Carousel.Root slideCount={images.length} w="full" h="full">
-              <Carousel.Control justifyContent="center" px="4" gap="4">
-                <Carousel.PrevTrigger asChild>
-                  <IconButton size="lg" variant="ghost" color="white">
-                    <LuChevronLeft />
-                  </IconButton>
-                </Carousel.PrevTrigger>
-
-                <Carousel.ItemGroup width="full">
-                  {images.map((src, index) => (
-                    <Carousel.Item key={index} index={index}>
-                      <AspectRatio ratio={16 / 9} maxH="80vh" w="full">
-                        <Image
-                          src={src}
-                          alt={`${hotelName} ${index + 1}`}
-                          objectFit="contain"
-                        />
-                      </AspectRatio>
-                    </Carousel.Item>
-                  ))}
-                </Carousel.ItemGroup>
-
-                <Carousel.NextTrigger asChild>
-                  <IconButton size="lg" variant="ghost" color="white">
-                    <LuChevronRight />
-                  </IconButton>
-                </Carousel.NextTrigger>
-              </Carousel.Control>
-
-              <CarouselThumbnails images={images} hotelName={hotelName} />
-            </Carousel.Root>
-          </Dialog.Body>
-        </Dialog.Content>
-      </Dialog.Positioner>
-    </Portal>
-  );
-}
-
-function CarouselThumbnails({
-  images,
-  hotelName,
-}: {
-  images: string[];
-  hotelName: string;
-}) {
-  const carousel = useCarouselContext();
-
-  return (
-    <HStack justify="center" mt={4}>
-      <Carousel.ProgressText mr="4" color="white" fontWeight="bold" />
-      {images.map((src, index) => (
-        <AspectRatio
-          key={index}
-          ratio={1}
-          w="16"
-          cursor="button"
-          onClick={() => carousel.scrollTo(index)}
-        >
-          <Image
-            src={src}
-            alt={`${hotelName} ${index + 1}`}
-            w="100%"
-            h="100%"
-            objectFit="cover"
-          />
-        </AspectRatio>
-      ))}
-    </HStack>
   );
 }
