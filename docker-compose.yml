@@ -61,8 +61,6 @@ services:
       MYSQL_USER: laravel
       MYSQL_PASSWORD: laravel
     command: --default-authentication-plugin=caching_sha2_password
-    ports:
-      - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
 
