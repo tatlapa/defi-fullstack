@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * Modèle HotelsPicture
  * Représente une image associée à un hôtel
- * Le champ position permet le réordonnancement par drag & drop
+ * Le champ position permet le réordonnancement
  */
 class HotelsPicture extends Model
 {
@@ -17,8 +17,8 @@ class HotelsPicture extends Model
     protected $fillable = [
         'hotel_id',
         'filepath',   // Chemin relatif depuis storage/app/public/
-        'filesize',   // Taille en octets
-        'position',   // Index de position pour le tri (commence à 0)
+        'filesize',
+        'position',   // Index de position pour le tri
     ];
 
     /**

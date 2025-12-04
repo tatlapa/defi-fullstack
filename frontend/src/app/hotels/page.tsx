@@ -3,10 +3,26 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useHotelStore } from "@/stores/hotelStore";
-import { Box, Heading, Grid, Text, Pagination, ButtonGroup, IconButton } from "@chakra-ui/react";
+import { Box, Heading, Grid, Text, Pagination, ButtonGroup, IconButton, Flex, Select, Portal, createListCollection } from "@chakra-ui/react";
 import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
 import HotelCard from "@/components/HotelCard";
 import HotelCardSkeleton from "@/components/HotelCardSkeleton";
+
+const sortOptions = createListCollection({
+  items: [
+    { label: "Aucun tri", value: "" },
+    { label: "Nom", value: "name" },
+    { label: "Ville", value: "city" },
+    { label: "Prix par nuit", value: "price_per_night" },
+  ],
+});
+
+const orderOptions = createListCollection({
+  items: [
+    { label: "Croissant", value: "asc" },
+    { label: "Décroissant", value: "desc" },
+  ],
+});
 
 /**
  * Page publique d'affichage des hôtels
@@ -16,17 +32,21 @@ export default function HotelsPage() {
   const router = useRouter();
   const { hotels, fetchHotels, loading, pagination } = useHotelStore();
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<string>('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const perPage = 12;
 
-  // Chargement des hôtels à chaque changement de page
+  // Chargement des hôtels à chaque changement de page ou de tri
   useEffect(() => {
-    fetchHotels({ page: currentPage, per_page: perPage });
-  }, [currentPage, fetchHotels]);
+    fetchHotels({
+      page: currentPage,
+      per_page: perPage,
+      ...(sortBy && { sort: sortBy, order: sortOrder })
+    });
+  }, [currentPage, sortBy, sortOrder, fetchHotels]);
 
   const handlePageChange = (details: { page: number }) => {
     setCurrentPage(details.page);
-    // Scroll vers le haut pour une meilleure UX
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -39,6 +59,80 @@ export default function HotelsPage() {
           Découvrez notre sélection d&apos;établissements
         </Heading>
       </Box>
+
+      <Flex gap={4} mb={6} flexWrap="wrap">
+        <Box flex="1" minW="200px">
+          <Select.Root
+            collection={sortOptions}
+            value={[sortBy]}
+            onValueChange={(e) => {
+              setSortBy(e.value[0]);
+              setCurrentPage(1);
+            }}
+            size="sm"
+          >
+            <Select.HiddenSelect />
+            <Select.Label>Trier par</Select.Label>
+            <Select.Control>
+              <Select.Trigger>
+                <Select.ValueText placeholder="Sélectionner un tri" />
+              </Select.Trigger>
+              <Select.IndicatorGroup>
+                <Select.Indicator />
+              </Select.IndicatorGroup>
+            </Select.Control>
+            <Portal>
+              <Select.Positioner>
+                <Select.Content>
+                  {sortOptions.items.map((option) => (
+                    <Select.Item item={option} key={option.value}>
+                      {option.label}
+                      <Select.ItemIndicator />
+                    </Select.Item>
+                  ))}
+                </Select.Content>
+              </Select.Positioner>
+            </Portal>
+          </Select.Root>
+        </Box>
+
+        {sortBy && (
+          <Box flex="1" minW="200px">
+            <Select.Root
+              collection={orderOptions}
+              value={[sortOrder]}
+              onValueChange={(e) => {
+                setSortOrder(e.value[0] as 'asc' | 'desc');
+                setCurrentPage(1);
+              }}
+              size="sm"
+            >
+              <Select.HiddenSelect />
+              <Select.Label>Ordre</Select.Label>
+              <Select.Control>
+                <Select.Trigger>
+                  <Select.ValueText />
+                </Select.Trigger>
+                <Select.IndicatorGroup>
+                  <Select.Indicator />
+                </Select.IndicatorGroup>
+              </Select.Control>
+              <Portal>
+                <Select.Positioner>
+                  <Select.Content>
+                    {orderOptions.items.map((option) => (
+                      <Select.Item item={option} key={option.value}>
+                        {option.label}
+                        <Select.ItemIndicator />
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Positioner>
+              </Portal>
+            </Select.Root>
+          </Box>
+        )}
+      </Flex>
 
       <Grid templateColumns="repeat(auto-fit, minmax(300px, 1fr))" gap={6}>
         {loading

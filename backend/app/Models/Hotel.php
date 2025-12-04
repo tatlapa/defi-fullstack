@@ -39,7 +39,6 @@ class Hotel extends Model
 
     /**
      * Scope pour filtrer les hôtels
-     * Supporte : nom (LIKE), ville (exact), tri personnalisé
      */
     public function scopeFilter($query, $filters)
     {

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useHotelStore } from "@/stores/hotelStore";
 import { Hotel } from "@/types";
 import { Dialog, Button, CloseButton } from "@chakra-ui/react";

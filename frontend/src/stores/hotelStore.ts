@@ -23,7 +23,7 @@ interface HotelStore {
   pagination?: PaginationMeta;
   apiErrors: Record<string, string[]>;
 
-  fetchHotels: (params?: { page?: number; per_page?: number }) => Promise<void>;
+  fetchHotels: (params?: { page?: number; per_page?: number; sort?: string; order?: string }) => Promise<void>;
   fetchHotel: (id: string) => Promise<void>;
   createHotel: (formData: FormData) => Promise<void>;
   updateHotel: (id: number, formData: FormData) => Promise<void>;
@@ -43,10 +43,12 @@ export const useHotelStore = create<HotelStore>((set) => ({
   fetchHotels: async (params) => {
     set({ loading: true, error: undefined });
     try {
-      // Construction des paramètres de pagination pour l'API
+      // Construction des paramètres de pagination et tri pour l'API
       const queryParams = new URLSearchParams();
       if (params?.page) queryParams.append('page', params.page.toString());
       if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+      if (params?.sort) queryParams.append('sort', params.sort);
+      if (params?.order) queryParams.append('order', params.order);
 
       const url = `/api/hotels${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       const res = await fetch(url);
