@@ -40,9 +40,9 @@ Une fois tous les services démarrés :
 
 ### Pages disponibles
 
-- **Page publique** : http://localhost:3000/hotels - Liste des hôtels avec pagination
-- **Page de détails** : http://localhost:3000/hotels/:id - Détails d'un hôtel avec carrousel d'images
-- **Interface d'administration** : http://localhost:3000/hotels/edit - CRUD complet avec drag & drop
+- **Page publique** : http://localhost/hotels - Liste des hôtels avec pagination
+- **Page de détails** : http://localhost/hotels/:id - Détails d'un hôtel avec carrousel d'images
+- **Interface d'administration** : http://localhost/hotels/edit - CRUD complet avec drag & drop
 
 ## 🏗️ Architecture
 
